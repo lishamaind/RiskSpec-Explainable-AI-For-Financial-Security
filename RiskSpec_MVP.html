@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RiskSpec MVP</title>
+<style>
+:root{
+  --bg:#0b1020;
+  --panel:#121a2b;
+  --panel2:#182238;
+  --text:#eef2ff;
+  --muted:#9aa6bf;
+  --accent:#6ee7b7;
+  --accent2:#60a5fa;
+  --danger:#fb7185;
+  --warning:#fbbf24;
+  --safe:#34d399;
+  --border:#26324a;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Inter,Segoe UI,Arial,sans-serif;
+  background:linear-gradient(135deg,#09111f,#0f172a 50%,#111827);
+  color:var(--text);
+  min-height:100vh;
+}
+.app{display:flex;min-height:100vh}
+.sidebar{
+  width:250px;
+  background:rgba(10,16,30,.96);
+  border-right:1px solid var(--border);
+  padding:22px 18px;
+  position:fixed;inset:0 auto 0 0;
+}
+.logo{display:flex;align-items:center;gap:12px;margin-bottom:28px}
+.logo-mark{
+  width:40px;height:40px;border-radius:12px;
+  display:grid;place-items:center;
+  background:linear-gradient(135deg,var(--accent2),var(--accent));
+  color:#07101d;font-weight:900;
+}
+.logo h1{font-size:20px;margin:0}
+.logo small{display:block;color:var(--muted);margin-top:2px}
+.nav button{
+  width:100%;border:0;background:transparent;color:var(--muted);
+  text-align:left;padding:12px 14px;margin:5px 0;border-radius:10px;
+  cursor:pointer;font-size:14px;
+}
+.nav button:hover,.nav button.active{
+  background:var(--panel2);color:var(--text);
+}
+.sidebar-note{
+  position:absolute;bottom:18px;left:18px;right:18px;
+  padding:13px;border:1px solid var(--border);border-radius:12px;
+  color:var(--muted);font-size:12px;background:var(--panel);
+}
+.main{margin-left:250px;width:calc(100% - 250px);padding:26px}
+.topbar{
+  display:flex;justify-content:space-between;align-items:center;margin-bottom:22px
+}
+.topbar h2{margin:0;font-size:26px}
+.top-actions{display:flex;gap:10px;align-items:center}
+.badge{
+  padding:8px 12px;border-radius:999px;background:#123226;color:var(--accent);
+  font-size:12px;font-weight:700;border:1px solid #1d5b44;
+}
+.btn{
+  border:1px solid var(--border);background:var(--panel2);color:var(--text);
+  padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:700;
+}
+.btn.primary{background:linear-gradient(135deg,var(--accent2),var(--accent));color:#07101d;border:0}
+.btn.danger{background:#3a1620;color:#fecdd3;border-color:#6b1f31}
+.view{display:none}.view.active{display:block}
+.grid{display:grid;gap:16px}
+.grid.cols-4{grid-template-columns:repeat(4,1fr)}
+.grid.cols-2{grid-template-columns:1.3fr .7fr}
+.card{
+  background:rgba(18,26,43,.94);
+  border:1px solid var(--border);
+  border-radius:16px;padding:18px;
+  box-shadow:0 12px 30px rgba(0,0,0,.18);
+}
+.metric .label{color:var(--muted);font-size:13px}
+.metric .value{font-size:30px;font-weight:800;margin:8px 0}
+.metric .trend{font-size:12px;color:var(--accent)}
+.section-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.section-title h3{margin:0;font-size:17px}
+.table-wrap{overflow:auto}
+table{width:100%;border-collapse:collapse}
+th,td{padding:13px 10px;border-bottom:1px solid var(--border);text-align:left;font-size:13px}
+th{color:var(--muted);font-weight:600}
+.status,.risk-pill{display:inline-block;padding:5px 9px;border-radius:999px;font-size:11px;font-weight:800}
+.status.flagged,.risk-high{background:#3c1420;color:#fecdd3}
+.status.review,.risk-med{background:#3d3010;color:#fde68a}
+.status.safe,.risk-low{background:#10352a;color:#bbf7d0}
+.row-click{cursor:pointer}.row-click:hover{background:#172034}
+.search-row{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+input,select,textarea{
+  background:#0f1728;border:1px solid var(--border);color:var(--text);
+  padding:10px 12px;border-radius:10px;outline:none;
+}
+input{min-width:220px}
+.bar-list{display:grid;gap:12px}
+.bar-item .top{display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px}
+.bar{height:10px;background:#0c1322;border-radius:99px;overflow:hidden}
+.bar span{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent2),var(--accent))}
+.donut{
+  width:180px;height:180px;border-radius:50%;
+  background:conic-gradient(var(--danger) 0 22%, var(--warning) 22% 46%, var(--safe) 46% 100%);
+  margin:10px auto;position:relative;
+}
+.donut:after{
+  content:"";position:absolute;inset:32px;border-radius:50%;background:var(--panel)
+}
+.legend{display:grid;gap:8px;font-size:12px;color:var(--muted)}
+.legend span i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px}
+.alert{
+  padding:13px;border:1px solid var(--border);border-radius:12px;margin-bottom:10px;background:#111a2b
+}
+.alert strong{display:block;margin-bottom:5px}
+.alert small{color:var(--muted)}
+.explain-box{
+  border-left:4px solid var(--accent2);padding:14px 16px;background:#0f1728;border-radius:10px;margin-top:14px
+}
+.reason{padding:10px 0;border-bottom:1px solid var(--border)}
+.reason:last-child{border-bottom:0}
+.progress{
+  height:14px;background:#0b1220;border-radius:99px;overflow:hidden;margin:10px 0
+}
+.progress span{display:block;height:100%;background:linear-gradient(90deg,var(--warning),var(--danger))}
+.kpi-line{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.kpi-box{flex:1;min-width:180px;padding:14px;border-radius:12px;background:#0f1728;border:1px solid var(--border)}
+.kpi-box b{font-size:22px;display:block;margin-top:6px}
+.modal{
+  position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;padding:20px;z-index:99
+}
+.modal.show{display:flex}
+.modal-content{
+  width:min(760px,96vw);max-height:90vh;overflow:auto;background:var(--panel);border:1px solid var(--border);
+  border-radius:18px;padding:22px;box-shadow:0 25px 80px rgba(0,0,0,.5)
+}
+.modal-head{display:flex;justify-content:space-between;align-items:center}
+.close{background:transparent;border:0;color:var(--muted);font-size:24px;cursor:pointer}
+.toast{
+  position:fixed;right:22px;bottom:22px;background:#102a22;color:#d1fae5;
+  border:1px solid #1f5f4b;padding:13px 16px;border-radius:12px;display:none;z-index:120
+}
+.toast.show{display:block}
+.arch{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:12px;align-items:center
+}
+.arch .node{
+  padding:16px;border:1px solid var(--border);border-radius:14px;background:#0f1728;text-align:center
+}
+.arch .arrow{text-align:center;color:var(--accent);font-size:24px}
+@media (max-width:1000px){
+  .grid.cols-4{grid-template-columns:repeat(2,1fr)}
+  .grid.cols-2{grid-template-columns:1fr}
+  .arch{grid-template-columns:1fr}
+  .sidebar{width:210px}
+  .main{margin-left:210px;width:calc(100% - 210px)}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-mark">RS</div>
+      <div><h1>RiskSpec</h1><small>Explainable Trust Infrastructure</small></div>
+    </div>
+    <div class="nav">
+      <button class="active" data-view="dashboard">Dashboard</button>
+      <button data-view="transactions">Transactions</button>
+      <button data-view="explainability">Explainable AI</button>
+      <button data-view="analytics">Analytics</button>
+      <button data-view="compliance">Compliance</button>
+      <button data-view="architecture">Architecture</button>
+      <button data-view="settings">Settings</button>
+    </div>
+    <div class="sidebar-note">
+      MVP Prototype<br>
+      Simulated data for investor demonstration.
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h2 id="pageTitle">Risk Intelligence Dashboard</h2>
+        <div style="color:var(--muted);font-size:13px;margin-top:4px">Unified fraud detection and explainable decision support</div>
+      </div>
+      <div class="top-actions">
+        <span class="badge">System Online</span>
+        <button class="btn" id="refreshBtn">Refresh</button>
+      </div>
+    </div>
+
+    <section id="dashboard" class="view active">
+      <div class="grid cols-4">
+        <div class="card metric"><div class="label">Transactions screened</div><div class="value" id="m1">24,891</div><div class="trend">+8.4% today</div></div>
+        <div class="card metric"><div class="label">High-risk alerts</div><div class="value">37</div><div class="trend" style="color:var(--danger)">12 require review</div></div>
+        <div class="card metric"><div class="label">False-positive reduction</div><div class="value">31%</div><div class="trend">vs legacy rules</div></div>
+        <div class="card metric"><div class="label">Average decision time</div><div class="value">84ms</div><div class="trend">within target</div></div>
+      </div>
+
+      <div class="grid cols-2" style="margin-top:16px">
+        <div class="card">
+          <div class="section-title"><h3>Recent risk alerts</h3><button class="btn" onclick="switchView('transactions')">View all</button></div>
+          <div id="alerts"></div>
+        </div>
+        <div class="card">
+          <div class="section-title"><h3>Risk distribution</h3></div>
+          <div class="donut"></div>
+          <div class="legend">
+            <span><i style="background:var(--danger)"></i>High risk: 22%</span>
+            <span><i style="background:var(--warning)"></i>Medium risk: 24%</span>
+            <span><i style="background:var(--safe)"></i>Low risk: 54%</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="transactions" class="view">
+      <div class="card">
+        <div class="section-title">
+          <h3>Transaction Monitoring</h3>
+          <button class="btn primary" onclick="simulateNewTransaction()">Simulate Transaction</button>
+        </div>
+        <div class="search-row">
+          <input id="searchInput" placeholder="Search transaction or customer">
+          <select id="riskFilter">
+            <option value="all">All risk levels</option>
+            <option value="high">High risk</option>
+            <option value="medium">Medium risk</option>
+            <option value="low">Low risk</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Customer</th><th>Amount</th><th>Country</th><th>Risk</th><th>Status</th><th>Time</th></tr></thead>
+            <tbody id="transactionBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="explainability" class="view">
+      <div class="grid cols-2">
+        <div class="card">
+          <div class="section-title"><h3>Explainable Decision</h3></div>
+          <label style="color:var(--muted);font-size:12px">Select a transaction</label><br>
+          <select id="xaiSelect" style="width:100%;margin-top:8px"></select>
+          <button class="btn primary" style="margin-top:12px;width:100%" onclick="runAnalysis()">Analyse Transaction</button>
+          <div id="analysisLoading" style="display:none;margin-top:14px;color:var(--muted)">Analysing behaviour, device, identity and payment signals...</div>
+          <div id="analysisResult"></div>
+        </div>
+        <div class="card">
+          <div class="section-title"><h3>Decision logic</h3></div>
+          <div class="explain-box">
+            RiskSpec does not only flag a transaction. It explains the main signals behind the score so compliance teams can review decisions and create an audit trail.
+          </div>
+          <div style="margin-top:16px">
+            <div class="reason"><b>Behavioural anomaly</b><div style="color:var(--muted);font-size:12px">Compares the transaction with normal customer patterns.</div></div>
+            <div class="reason"><b>Synthetic identity indicators</b><div style="color:var(--muted);font-size:12px">Checks consistency across identity attributes.</div></div>
+            <div class="reason"><b>Contextual payment risk</b><div style="color:var(--muted);font-size:12px">Uses location, device, value and velocity signals.</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="analytics" class="view">
+      <div class="grid cols-2">
+        <div class="card">
+          <div class="section-title"><h3>Fraud signals by category</h3></div>
+          <div class="bar-list">
+            <div class="bar-item"><div class="top"><span>Unusual device</span><span>78%</span></div><div class="bar"><span style="width:78%"></span></div></div>
+            <div class="bar-item"><div class="top"><span>Impossible travel</span><span>64%</span></div><div class="bar"><span style="width:64%"></span></div></div>
+            <div class="bar-item"><div class="top"><span>Amount anomaly</span><span>59%</span></div><div class="bar"><span style="width:59%"></span></div></div>
+            <div class="bar-item"><div class="top"><span>Identity mismatch</span><span>41%</span></div><div class="bar"><span style="width:41%"></span></div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="section-title"><h3>Operational impact</h3></div>
+          <div class="kpi-line">
+            <div class="kpi-box"><span style="color:var(--muted)">Manual reviews avoided</span><b>412</b></div>
+            <div class="kpi-box"><span style="color:var(--muted)">Estimated savings</span><b>£18.6k</b></div>
+          </div>
+          <div class="kpi-line" style="margin-top:12px">
+            <div class="kpi-box"><span style="color:var(--muted)">Detection precision</span><b>91%</b></div>
+            <div class="kpi-box"><span style="color:var(--muted)">Audit completeness</span><b>100%</b></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="compliance" class="view">
+      <div class="grid cols-2">
+        <div class="card">
+          <div class="section-title"><h3>Compliance Audit Trail</h3></div>
+          <p style="color:var(--muted)">Generate a structured record containing the risk score, reasons, decision and reviewer action.</p>
+          <button class="btn primary" onclick="generateReport()">Generate Audit Report</button>
+          <button class="btn" onclick="downloadCSV()">Download CSV</button>
+          <div id="reportOutput" class="explain-box" style="display:none"></div>
+        </div>
+        <div class="card">
+          <div class="section-title"><h3>Control coverage</h3></div>
+          <div class="reason"><b>Right to explanation</b><div style="color:var(--muted);font-size:12px">Human-readable decision rationale.</div></div>
+          <div class="reason"><b>Reviewer accountability</b><div style="color:var(--muted);font-size:12px">Stores reviewer and action history.</div></div>
+          <div class="reason"><b>Data minimisation</b><div style="color:var(--muted);font-size:12px">Only relevant decision features are shown.</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="architecture" class="view">
+      <div class="card">
+        <div class="section-title"><h3>MVP Technical Architecture</h3></div>
+        <div class="arch">
+          <div class="node"><b>Payment Data</b><br><small style="color:var(--muted)">Simulated JSON transactions</small></div>
+          <div class="node"><b>FastAPI Layer</b><br><small style="color:var(--muted)">Planned API orchestration</small></div>
+          <div class="node"><b>Risk Engine</b><br><small style="color:var(--muted)">Rules + explainable scoring</small></div>
+          <div class="node"><b>XAI Dashboard</b><br><small style="color:var(--muted)">Human-readable outputs</small></div>
+        </div>
+        <div class="explain-box" style="margin-top:18px">
+          Current stage: interactive front-end MVP using simulated data. Next stage: connect the interface to FastAPI endpoints and a trained detection model.
+        </div>
+      </div>
+    </section>
+
+    <section id="settings" class="view">
+      <div class="card">
+        <div class="section-title"><h3>Risk Threshold Settings</h3></div>
+        <label>High-risk threshold: <b id="thresholdValue">75</b>%</label>
+        <input type="range" id="thresholdSlider" min="50" max="95" value="75" style="width:100%;margin:18px 0">
+        <button class="btn primary" onclick="saveSettings()">Save Settings</button>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="transactionModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-head"><h3 id="modalTitle">Transaction Details</h3><button class="close" onclick="closeModal()">×</button></div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const transactions = [
+ {id:"TX-98421",customer:"Amelia Grant",amount:2400,country:"UK",risk:92,status:"Flagged",time:"10:42",reasons:["New device fingerprint","Payment value is 6.2× normal","Login detected from a new location","Rapid beneficiary creation"]},
+ {id:"TX-98420",customer:"Daniel Reed",amount:85,country:"UK",risk:18,status:"Safe",time:"10:39",reasons:["Known device","Normal payment pattern","Usual location"]},
+ {id:"TX-98419",customer:"Maya Collins",amount:760,country:"France",risk:74,status:"Review",time:"10:34",reasons:["Cross-border transfer","New beneficiary","Moderate amount anomaly"]},
+ {id:"TX-98418",customer:"Noah Patel",amount:39,country:"UK",risk:7,status:"Safe",time:"10:28",reasons:["Normal spending pattern","Trusted device"]},
+ {id:"TX-98417",customer:"Olivia Brooks",amount:5150,country:"Spain",risk:88,status:"Flagged",time:"10:19",reasons:["Impossible travel signal","High-value transfer","Account accessed from unfamiliar IP"]},
+ {id:"TX-98416",customer:"Ethan Shah",amount:410,country:"UK",risk:43,status:"Review",time:"10:12",reasons:["Payment velocity increase","New merchant category"]},
+ {id:"TX-98415",customer:"Sophia Khan",amount:22,country:"UK",risk:4,status:"Safe",time:"10:05",reasons:["Normal customer behaviour"]}
+];
+
+const titles = {
+ dashboard:"Risk Intelligence Dashboard",
+ transactions:"Transaction Monitoring",
+ explainability:"Explainable AI",
+ analytics:"Risk Analytics",
+ compliance:"Compliance & Audit",
+ architecture:"Technical Architecture",
+ settings:"System Settings"
+};
+
+function switchView(id){
+ document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+ document.getElementById(id).classList.add("active");
+ document.querySelectorAll(".nav button").forEach(b=>b.classList.toggle("active",b.dataset.view===id));
+ document.getElementById("pageTitle").textContent=titles[id];
+}
+document.querySelectorAll(".nav button").forEach(btn=>btn.addEventListener("click",()=>switchView(btn.dataset.view)));
+
+function riskClass(r){
+ if(r>=75) return "risk-high";
+ if(r>=40) return "risk-med";
+ return "risk-low";
+}
+function statusClass(s){ return s.toLowerCase()==="flagged"?"flagged":s.toLowerCase()==="review"?"review":"safe"; }
+
+function renderTransactions(){
+ const q=document.getElementById("searchInput").value.toLowerCase();
+ const f=document.getElementById("riskFilter").value;
+ const body=document.getElementById("transactionBody");
+ body.innerHTML="";
+ transactions.filter(t=>{
+   const matches=(t.id+" "+t.customer+" "+t.country).toLowerCase().includes(q);
+   const band=t.risk>=75?"high":t.risk>=40?"medium":"low";
+   return matches&&(f==="all"||f===band);
+ }).forEach(t=>{
+   const tr=document.createElement("tr"); tr.className="row-click";
+   tr.innerHTML=`<td>${t.id}</td><td>${t.customer}</td><td>£${t.amount.toLocaleString()}</td><td>${t.country}</td><td><span class="risk-pill ${riskClass(t.risk)}">${t.risk}%</span></td><td><span class="status ${statusClass(t.status)}">${t.status}</span></td><td>${t.time}</td>`;
+   tr.onclick=()=>openTransaction(t.id);
+   body.appendChild(tr);
+ });
+ populateSelect();
+}
+document.getElementById("searchInput").addEventListener("input",renderTransactions);
+document.getElementById("riskFilter").addEventListener("change",renderTransactions);
+
+function renderAlerts(){
+ const box=document.getElementById("alerts");
+ box.innerHTML="";
+ transactions.filter(t=>t.risk>=70).slice(0,4).forEach(t=>{
+   const d=document.createElement("div");d.className="alert row-click";
+   d.innerHTML=`<strong>${t.id} · ${t.customer}</strong><small>£${t.amount.toLocaleString()} · Risk ${t.risk}% · ${t.reasons[0]}</small>`;
+   d.onclick=()=>openTransaction(t.id);
+   box.appendChild(d);
+ });
+}
+function openTransaction(id){
+ const t=transactions.find(x=>x.id===id);
+ document.getElementById("modalTitle").textContent=`${t.id} — ${t.customer}`;
+ document.getElementById("modalBody").innerHTML=`
+   <div class="kpi-line">
+    <div class="kpi-box"><span style="color:var(--muted)">Amount</span><b>£${t.amount.toLocaleString()}</b></div>
+    <div class="kpi-box"><span style="color:var(--muted)">Risk score</span><b>${t.risk}%</b></div>
+    <div class="kpi-box"><span style="color:var(--muted)">Decision</span><b>${t.status}</b></div>
+   </div>
+   <div class="progress"><span style="width:${t.risk}%"></span></div>
+   <div class="explain-box"><b>Why this decision?</b>${t.reasons.map(r=>`<div class="reason">• ${r}</div>`).join("")}</div>
+   <div style="margin-top:16px;display:flex;gap:10px">
+     <button class="btn primary" onclick="switchView('explainability');closeModal();document.getElementById('xaiSelect').value='${t.id}'">Open XAI Analysis</button>
+     <button class="btn" onclick="showToast('Transaction marked for manual review')">Send to Review</button>
+   </div>`;
+ document.getElementById("transactionModal").classList.add("show");
+}
+function closeModal(){document.getElementById("transactionModal").classList.remove("show");}
+
+function populateSelect(){
+ const s=document.getElementById("xaiSelect");
+ const current=s.value;
+ s.innerHTML=transactions.map(t=>`<option value="${t.id}">${t.id} — ${t.customer} — ${t.risk}%</option>`).join("");
+ if(current) s.value=current;
+}
+function runAnalysis(){
+ const id=document.getElementById("xaiSelect").value;
+ const t=transactions.find(x=>x.id===id);
+ document.getElementById("analysisLoading").style.display="block";
+ document.getElementById("analysisResult").innerHTML="";
+ setTimeout(()=>{
+  document.getElementById("analysisLoading").style.display="none";
+  document.getElementById("analysisResult").innerHTML=`
+    <div class="explain-box">
+      <div style="display:flex;justify-content:space-between"><b>Risk score</b><b>${t.risk}%</b></div>
+      <div class="progress"><span style="width:${t.risk}%"></span></div>
+      <div><b>Recommended action:</b> ${t.risk>=75?"Block and review":t.risk>=40?"Manual review":"Approve"}</div>
+      <div style="margin-top:10px"><b>Main reasons:</b></div>
+      ${t.reasons.map(r=>`<div class="reason">• ${r}</div>`).join("")}
+      <div style="margin-top:10px;color:var(--muted);font-size:12px">Generated from simulated behavioural, device, identity and payment signals.</div>
+    </div>`;
+ },900);
+}
+function simulateNewTransaction(){
+ const sample={id:"TX-"+Math.floor(99000+Math.random()*900),customer:"Simulated Customer",amount:Math.floor(120+Math.random()*4800),country:["UK","Germany","Netherlands","USA"][Math.floor(Math.random()*4)],risk:Math.floor(45+Math.random()*50),status:"Review",time:new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}),reasons:["New device","Payment outside normal pattern","Beneficiary recently added"]};
+ sample.status=sample.risk>=75?"Flagged":"Review";
+ transactions.unshift(sample);
+ renderTransactions();renderAlerts();
+ showToast("New transaction analysed");
+}
+function generateReport(){
+ const t=transactions[0];
+ const out=document.getElementById("reportOutput");
+ out.style.display="block";
+ out.innerHTML=`<b>Audit Record Generated</b><br><br>
+ Transaction: ${t.id}<br>
+ Risk score: ${t.risk}%<br>
+ Decision: ${t.status}<br>
+ Explanation: ${t.reasons.join("; ")}<br>
+ Reviewer: Pending<br>
+ Timestamp: ${new Date().toLocaleString()}`;
+}
+function downloadCSV(){
+ const rows=[["ID","Customer","Amount","Country","Risk","Status","Time"],...transactions.map(t=>[t.id,t.customer,t.amount,t.country,t.risk,t.status,t.time])];
+ const csv=rows.map(r=>r.map(v=>`"${String(v).replaceAll('"','""')}"`).join(",")).join("\n");
+ const blob=new Blob([csv],{type:"text/csv"});
+ const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="RiskSpec_Audit_Transactions.csv";a.click();
+ showToast("CSV downloaded");
+}
+function saveSettings(){showToast("Risk threshold saved at "+document.getElementById("thresholdSlider").value+"%");}
+document.getElementById("thresholdSlider").addEventListener("input",e=>document.getElementById("thresholdValue").textContent=e.target.value);
+document.getElementById("refreshBtn").addEventListener("click",()=>{
+ document.getElementById("m1").textContent=(24891+Math.floor(Math.random()*50)).toLocaleString();
+ showToast("Dashboard refreshed");
+});
+function showToast(msg){
+ const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");
+ setTimeout(()=>t.classList.remove("show"),2200);
+}
+window.onclick=e=>{if(e.target===document.getElementById("transactionModal"))closeModal();}
+renderTransactions();renderAlerts();populateSelect();
+</script>
+</body>
+</html>
